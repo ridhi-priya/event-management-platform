@@ -40,8 +40,11 @@ const EventCard = ({ event, onEdit, onDelete }) => {
         </div>
         
         {/* Description */}
-        <p className="mt-4 text-gray-600 line-clamp-2">{event.description}</p>
-        
+        {/* <p className="mt-4 text-gray-600 line-clamp-2">{event.description}</p> */}
+<div
+  className="mt-4 text-gray-600 line-clamp-2"
+  dangerouslySetInnerHTML={{ __html: event.description }}
+/>        
         {/* Action Buttons */}
         <div className="mt-6 flex justify-end space-x-2">
           <button

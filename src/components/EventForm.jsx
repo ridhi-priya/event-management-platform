@@ -1,30 +1,66 @@
-import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { useState, useEffect, useRef } from "react";
+import { X } from "lucide-react";
+import "react-quill/dist/quill.snow.css";
+import ReactQuill from "react-quill";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import Picker from "@emoji-mart/react";
+import data from "@emoji-mart/data";
 
 /* eslint-disable react/prop-types */
 
-const EventForm = ({ onSubmit, onClose, initialData }) => {
+const EventForm = ({ onSubmit, onClose, initialData, startDate }) => {
   const [formData, setFormData] = useState({
-    title: '',
-    date: '',
-    time: '',
-    location: '',
-    description: '',
-    image: '',
-    category: 'Technology',
+    title: "",
+    datetime: null,
+    location: "",
+    description: "",
+    image: "",
+    category: "Technology",
   });
+  const [showEmoji, setShowEmoji] = useState(false);
+  const quillRef = useRef(null);
 
   useEffect(() => {
     if (initialData) {
-      setFormData(initialData);
+      setFormData({
+        ...initialData,
+        datetime: initialData.date
+          ? new Date(`${initialData.date}T${initialData.time}`)
+          : null,
+      });
     }
   }, [initialData]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit({ ...formData, id: initialData?.id || crypto.randomUUID() });
+    const dateISO = formData.datetime?.toISOString().split("T")[0];
+    const timeISO = formData.datetime?.toTimeString().split(" ")[0].slice(0, 5);
+
+    onSubmit({
+      ...formData,
+      id: initialData?.id || crypto.randomUUID(),
+      date: dateISO,
+      time: timeISO,
+    });
+
     onClose();
   };
+
+  const handleEmojiSelect = (emoji) => {
+    const editor = quillRef.current.getEditor();
+    const range = editor.getSelection();
+    editor.insertText(range ? range.index : 0, emoji.native);
+    setShowEmoji(false);
+  };
+
+  const modules = {
+    toolbar: {
+      container: [["bold", "italic", "underline"], ["link"]],
+    },
+  };
+
+  const formats = ["bold", "italic", "underline", "link"];
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
@@ -36,61 +72,67 @@ const EventForm = ({ onSubmit, onClose, initialData }) => {
         >
           <X className="w-6 h-6" />
         </button>
-        
-        {/* Form Title */}
+
         <h2 className="text-2xl font-semibold mb-6">
-          {initialData ? 'Edit Event' : 'Create New Event'}
+          {initialData ? "Edit Event" : "Create New Event"}
         </h2>
 
-        {/* Event Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 ">Title</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Title
+            </label>
             <input
               type="text"
               value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, title: e.target.value })
+              }
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border-2"
               required
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Date</label>
-              <input
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Time</label>
-              <input
-                type="time"
-                value={formData.time}
-                onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                required
-              />
-            </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Date & Time
+            </label>
+            <DatePicker
+              selected={formData.datetime}
+              onChange={(date) => setFormData({ ...formData, datetime: date })}
+              showTimeSelect
+              timeFormat="HH:mm aa"
+              timeIntervals={15}
+              dateFormat="MMMM d, yyyy h:mm aa"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border-2 p-2"
+              minDate={startDate ? new Date(startDate) : undefined}
+              required
+            />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Location</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Location
+            </label>
             <input
               type="text"
               value={formData.location}
-              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, location: e.target.value })
+              }
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border-2"
               required
             />
           </div>
+
           <div>
-            <label className="block text-sm font-medium text-gray-700">Category</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Category
+            </label>
             <select
               value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, category: e.target.value })
+              }
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border-2"
             >
               <option>Technology</option>
@@ -101,28 +143,70 @@ const EventForm = ({ onSubmit, onClose, initialData }) => {
               <option>Marriage</option>
             </select>
           </div>
+
           <div>
-            <label className="block text-sm font-medium text-gray-700">Image URL</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Description
+            </label>
+            <div className="relative">
+              <ReactQuill
+                ref={quillRef}
+                value={formData.description}
+                onChange={(value) =>
+                  setFormData({ ...formData, description: value })
+                }
+                modules={modules}
+                formats={formats}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border-2"
+              />
+              <button
+                type="button"
+                onClick={() => setShowEmoji(!showEmoji)}
+                className="absolute right-2 top-2 text-l"
+              >
+                Emoji
+              </button>
+              {showEmoji && (
+                <div
+                  className="fixed z-50"
+                  style={{
+                    left: "50%",
+                    top: "30%",
+                    transform: "translate(-50%, -50%)",
+                    maxWidth: "90vw",
+                    maxHeight: "80vh",
+                    overflow: "auto",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                  }}
+                >
+                  <Picker
+                    data={data}
+                    onEmojiSelect={handleEmojiSelect}
+                    previewPosition="none"
+                    skinTonePosition="none"
+                    theme="light"
+                    style={{ maxHeight: "300px" }}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Image URL
+            </label>
             <input
               type="url"
               value={formData.image}
-              onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border-2"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Description</label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              rows={3}
+              onChange={(e) =>
+                setFormData({ ...formData, image: e.target.value })
+              }
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border-2"
               required
             />
           </div>
 
-          {/* Action Buttons */}
           <div className="flex justify-end space-x-3">
             <button
               type="button"
@@ -135,7 +219,7 @@ const EventForm = ({ onSubmit, onClose, initialData }) => {
               type="submit"
               className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
             >
-              {initialData ? 'Update Event' : 'Create Event'}
+              {initialData ? "Update Event" : "Create Event"}
             </button>
           </div>
         </form>

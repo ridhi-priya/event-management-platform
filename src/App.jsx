@@ -40,6 +40,10 @@ const EventDashboard = () => {
 
   const categories = ['All', ...new Set(state.events.map((event) => event.category))];
 
+  const today = new Date().toISOString().split('T')[0]; 
+  const hasPastEvents = state.events.some((event) => event.date < today);
+  const startDate = hasPastEvents ? today : '';
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -106,6 +110,7 @@ const EventDashboard = () => {
               setEditingEvent(null);
             }}
             initialData={editingEvent}
+            startDate={startDate || undefined}
           />
         )}
       </div>
